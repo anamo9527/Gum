@@ -13,6 +13,9 @@ namespace MonoGameGum.Input
 
     public class Cursor : ICursor
     {
+        private Func<MouseState, MouseState>? _mouseScale;
+        private Func<TouchCollection, TouchCollection>? _touchScale;
+        
         public InputDevice LastInputDevice
         {
             get;
@@ -221,6 +224,9 @@ namespace MonoGameGum.Input
             // do we want to change X and Y?
         }
 
+        public void MouseScale(Func<MouseState, MouseState> func) => _mouseScale = func;
+        public void TouchScale(Func<TouchCollection, TouchCollection> func) => _touchScale = func;
+
         public void Activity(double currentTime)
         {
             mLastFrameMouseState = _mouseState;
@@ -233,8 +239,11 @@ namespace MonoGameGum.Input
 
             if (System.OperatingSystem.IsAndroid() || System.OperatingSystem.IsIOS())
             {
+                var state = TouchPanel.GetState();
+                if (_touchScale != null) state = _touchScale(state);
+                
                 LastInputDevice = InputDevice.TouchScreen;
-                _touchCollection = TouchPanel.GetState();
+                _touchCollection = state;
 
                 if (_touchCollection.Count > 0)
                 {
@@ -244,8 +253,11 @@ namespace MonoGameGum.Input
             }
             else
             {
+                var state = Microsoft.Xna.Framework.Input.Mouse.GetState();
+                if (_mouseScale != null) state = _mouseScale(state);
+                
                 LastInputDevice = InputDevice.Mouse;
-                _mouseState = Microsoft.Xna.Framework.Input.Mouse.GetState();
+                _mouseState = state;
                 X = _mouseState.X;
                 Y = _mouseState.Y;
             }
